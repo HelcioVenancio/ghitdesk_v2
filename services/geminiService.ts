@@ -23,21 +23,22 @@ const flowTools: FunctionDeclaration[] = [
       properties: {
         type: {
           type: Type.STRING,
-          description: 'Type of node: "trigger", "action", or "condition".',
-          enum: ["trigger", "action", "condition"]
+          description: 'Type of node.',
+          enum: ["trigger", "message", "image", "input_text", "condition", "wait", "email_send", "agent_handoff"]
         },
         title: {
           type: Type.STRING,
-          description: 'Title displayed on the node (e.g., "Send Email", "Check Time").'
+          description: 'Title displayed on the node.'
         },
         description: {
           type: Type.STRING,
-          description: 'Short description of what the node does.'
+          description: 'Short description.'
         },
+        content: { type: Type.STRING, description: 'Content for message nodes.' },
         x: { type: Type.NUMBER, description: 'X coordinate (optional)' },
         y: { type: Type.NUMBER, description: 'Y coordinate (optional)' }
       },
-      required: ['type', 'title', 'description']
+      required: ['type', 'title']
     }
   },
   {

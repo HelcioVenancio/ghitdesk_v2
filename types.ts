@@ -133,7 +133,7 @@ export interface DashboardStats {
 }
 
 // Flow Automation Types
-export type NodeType = 'trigger' | 'action' | 'condition';
+export type NodeType = 'trigger' | 'message' | 'image' | 'video' | 'embed' | 'input_text' | 'input_email' | 'input_phone' | 'condition' | 'wait' | 'email_send' | 'agent_handoff' | 'webhook';
 
 export interface FlowNode {
     id: string;
@@ -142,9 +142,18 @@ export interface FlowNode {
     y: number;
     data: {
         title: string;
-        description: string;
-        icon?: React.ReactNode; // Note: Icons might not serialize well for AI, handled separately in context logic if needed
+        description?: string;
         iconName?: string; // Helper for serialization
+        // Dynamic fields
+        content?: string;
+        url?: string;
+        variable?: string;
+        placeholder?: string;
+        options?: string[];
+        subject?: string;
+        to?: string;
+        condition?: string;
+        duration?: number;
     };
 }
 
