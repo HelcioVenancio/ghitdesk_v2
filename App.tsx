@@ -11,106 +11,176 @@ import ActivityBoard from './components/ActivityBoard';
 import AutomationBuilder from './components/AutomationBuilder';
 import { Menu } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { DataProvider } from './contexts/DataContext';
+import { DataProvider, useData } from './contexts/DataContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import { Message } from './types';
 
-const App: React.FC = () => {
-  const [activeView, setActiveView] = useState('inbox'); 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+// Componente para simular mensagens chegando (apenas para demo)
+const IncomingMessageSimulator = () => {
+    const { addToast } = useToast();
+    const { tickets, updateTicket, currentUser } = useData();
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+    useEffect(() => {
+        // Dispara uma mensagem aleatória a cada 30-60 segundos para demo
+        const interval = setInterval(() => {
+            if (tickets.length === 0) return;
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+            const randomTicket = tickets[Math.floor(Math.random() * tickets.length)];
+            const messages = [
+                "Olá, ainda estou aguardando um retorno.",
+                "Pode me enviar o boleto novamente?",
+                "Obrigado pela ajuda!",
+                "Tenho uma dúvida sobre a fatura.",
+                "Quando meu pedido vai chegar?"
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
 
-  const renderView = () => {
-    switch (activeView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'inbox':
-        return <Inbox />;
-      case 'tickets':
-        return <TicketBoard />;
-      case 'tasks':
-        return <TaskBoard />;
-      case 'activities':
-        return <ActivityBoard />;
-      case 'flows':
-        return <AutomationBuilder />;
-      case 'contacts':
-        return <ContactList />;
-      case 'settings':
-        return <Settings />;
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center transition-all duration-300">
-             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Em construção</h2>
-             <p className="text-slate-500 dark:text-slate-400">A funcionalidade "{activeView}" estará disponível em breve.</p>
-             <button onClick={() => setActiveView('dashboard')} className="mt-4 text-indigo-600 dark:text-indigo-400 hover:underline">Voltar ao Dashboard</button>
-          </div>
-        );
-    }
-  };
+            addToast({
+                senderName: randomTicket.customer.name,
+                avatar: randomTicket.customer.avatar,
+                content: randomMsg,
+                channel: randomTicket.channel,
+                ticketId: randomTicket.id,
+                onReply: (text) => {
+                    // Adiciona a mensagem do cliente e a resposta do agente ao ticket
+                    const customerMsg: Message = {
+                        id: Date.now().toString() + 'c',
+                        senderId: randomTicket.customer.id,
+                        content: randomMsg,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const replyMsg: Message = {
+                        id: Date.now().toString() + 'r',
+                        senderId: currentUser.id,
+                        content: text,
+                        timestamp: new Date().toISOString()
+                    };
 
-  return (
-    <DataProvider>
+                    updateTicket(randomTicket.id, {
+                        messages: [...randomTicket.messages, customerMsg, replyMsg],
+                        lastMessageAt: new Date().toISOString(),
+                        unreadCount: 0 
+                    });
+                }
+            });
+
+        }, 45000); // 45 segundos
+
+        return () => clearInterval(interval);
+    }, [tickets, addToast, updateTicket, currentUser]);
+
+    return null;
+};
+
+const AppContent: React.FC = () => {
+    const [activeView, setActiveView] = useState('inbox'); 
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+    useEffect(() => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    };
+
+    const renderView = () => {
+        switch (activeView) {
+            case 'dashboard':
+                return <Dashboard />;
+            case 'inbox':
+                return <Inbox />;
+            case 'tickets':
+                return <TicketBoard />;
+            case 'tasks':
+                return <TaskBoard />;
+            case 'activities':
+                return <ActivityBoard />;
+            case 'flows':
+                return <AutomationBuilder />;
+            case 'contacts':
+                return <ContactList />;
+            case 'settings':
+                return <Settings />;
+            default:
+                return (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center transition-all duration-300">
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Em construção</h2>
+                        <p className="text-slate-500 dark:text-slate-400">A funcionalidade "{activeView}" estará disponível em breve.</p>
+                        <button onClick={() => setActiveView('dashboard')} className="mt-4 text-indigo-600 dark:text-indigo-400 hover:underline">Voltar ao Dashboard</button>
+                    </div>
+                );
+        }
+    };
+
+    return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-inter flex overflow-hidden transition-colors duration-300">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-slate-900 dark:bg-slate-950 text-white p-4 flex justify-between items-center fixed top-0 w-full z-30 shadow-md h-16">
-            <span className="font-bold text-xl">GhitDesk</span>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                <Menu size={24} />
-            </button>
-        </div>
+            <IncomingMessageSimulator />
+            
+            {/* Mobile Header */}
+            <div className="md:hidden bg-slate-900 dark:bg-slate-950 text-white p-4 flex justify-between items-center fixed top-0 w-full z-30 shadow-md h-16">
+                <span className="font-bold text-xl">GhitDesk</span>
+                <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                    <Menu size={24} />
+                </button>
+            </div>
 
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-            <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)}>
-                <div className="bg-slate-900 w-64 h-full p-4" onClick={e => e.stopPropagation()}>
-                    <div className="flex flex-col gap-4 mt-10">
-                        <button onClick={() => {setActiveView('dashboard'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Dashboard</button>
-                        <button onClick={() => {setActiveView('inbox'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Inbox</button>
-                        <button onClick={() => {setActiveView('tickets'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Tickets</button>
-                        <button onClick={() => {setActiveView('tasks'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Tarefas</button>
-                        <button onClick={() => {setActiveView('activities'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Atividades</button>
-                        <button onClick={() => {setActiveView('flows'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Fluxos</button>
-                        <button onClick={() => {setActiveView('contacts'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Contatos</button>
-                        <button onClick={() => {setActiveView('settings'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Configurações</button>
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+                <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="bg-slate-900 w-64 h-full p-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col gap-4 mt-10">
+                            <button onClick={() => {setActiveView('dashboard'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Dashboard</button>
+                            <button onClick={() => {setActiveView('inbox'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Inbox</button>
+                            <button onClick={() => {setActiveView('tickets'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Tickets</button>
+                            <button onClick={() => {setActiveView('tasks'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Tarefas</button>
+                            <button onClick={() => {setActiveView('activities'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Atividades</button>
+                            <button onClick={() => {setActiveView('flows'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Fluxos</button>
+                            <button onClick={() => {setActiveView('contacts'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Contatos</button>
+                            <button onClick={() => {setActiveView('settings'); setMobileMenuOpen(false)}} className="text-white font-medium text-left py-2">Configurações</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
+            )}
 
-        <Sidebar 
-            activeView={activeView} 
-            setActiveView={setActiveView} 
-            isCollapsed={isSidebarCollapsed}
-            toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            theme={theme}
-            toggleTheme={toggleTheme}
-        />
-        
-        {/* Main Content Area with dynamic margin */}
-        <motion.main 
-            className="flex-1 h-screen overflow-hidden pt-16 md:pt-0"
-            animate={{ marginLeft: isSidebarCollapsed ? 80 : 280 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
-            <AnimatePresence mode="wait">
-                {renderView()}
-            </AnimatePresence>
-        </motion.main>
-        
-        <AIChatbot />
+            <Sidebar 
+                activeView={activeView} 
+                setActiveView={setActiveView} 
+                isCollapsed={isSidebarCollapsed}
+                toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                theme={theme}
+                toggleTheme={toggleTheme}
+            />
+            
+            {/* Main Content Area with dynamic margin */}
+            <motion.main 
+                className="flex-1 h-screen overflow-hidden pt-16 md:pt-0"
+                animate={{ marginLeft: isSidebarCollapsed ? 80 : 280 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+                <AnimatePresence mode="wait">
+                    {renderView()}
+                </AnimatePresence>
+            </motion.main>
+            
+            <AIChatbot />
         </div>
+    );
+};
+
+const App: React.FC = () => {
+  return (
+    <DataProvider>
+        <ToastProvider>
+            <AppContent />
+        </ToastProvider>
     </DataProvider>
   );
 };

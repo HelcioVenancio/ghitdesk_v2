@@ -439,7 +439,13 @@ const Inbox: React.FC = () => {
                             const isInternal = msg.isInternal;
 
                             return (
-                            <div key={msg.id} className={`flex gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <motion.div 
+                                key={msg.id}
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                className={`flex gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}
+                            >
                                 {!isMe && (
                                     <div className="w-8 flex-shrink-0 mt-1">
                                         {showAvatar && (
@@ -476,7 +482,7 @@ const Inbox: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                             );
                         })}
                     </div>
